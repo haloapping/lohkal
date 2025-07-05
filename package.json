@@ -4,13 +4,27 @@
 		"format": "bunx biome format --write .",
 		"lint": "bunx biome lint --write .",
 		"check": "bunx biome check --write .",
+		"db:gen": "bun drizzle-kit generate",
+		"db:migrate": "bun drizzle-kit migrate",
+		"db:push": "bun drizzle-kit push",
+		"db:pull": "bun drizzle-kit pull",
+		"db:check": "bun drizzle-kit check",
+		"db:up": "bun drizzle-kit up",
+		"db:studio": "bun drizzle-kit studio",
 		"dev": "bun run --hot src/index.ts"
 	},
 	"dependencies": {
+		"@hono/zod-openapi": "^0.19.9",
+		"@scalar/hono-api-reference": "^0.9.7",
 		"dotenv": "^17.0.1",
 		"drizzle-orm": "^0.44.2",
+		"drizzle-zod": "^0.8.2",
 		"hono": "^4.8.4",
-		"pg": "^8.16.3"
+		"pg": "^8.16.3",
+		"ulid": "^3.0.1",
+		"znv": "^0.5.0",
+		"zod": "^3.25.74",
+		"zod-openapi": "^5.0.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.0.6",

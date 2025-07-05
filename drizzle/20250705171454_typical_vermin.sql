@@ -1,0 +1,1 @@
+ALTER TABLE "words" RENAME COLUMN "update_at" TO "updated_at";
