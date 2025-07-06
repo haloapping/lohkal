@@ -2,17 +2,25 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../../db/db";
 import {
+	languageSubmissionsTable,
+	languagesTable,
 	provinceSubmissionsTable,
 	provincesTable,
 	usersTable,
+	wordSubmissionsTable,
+	wordsTable,
 } from "../../db/schema";
 import { checkAuthorized } from "../../middleware/auth";
-import { getAllSubmissionProvinces } from "./response-schema";
+import {
+	getAllSubmissionLanguagesResp,
+	getAllSubmissionProvincesResp,
+	getAllSubmissionWordsResp,
+} from "./response-schema";
 
 export const submissionRoute = new OpenAPIHono();
 const tags = ["submissions"];
 
-// get all province by submitter
+// get all provinces by submitter
 submissionRoute.openapi(
 	createRoute({
 		middleware: checkAuthorized,
@@ -23,10 +31,10 @@ submissionRoute.openapi(
 		description: "get all provinces by submitter",
 		responses: {
 			200: {
-				description: "add new language",
+				description: "request body",
 				content: {
 					"application/json": {
-						schema: getAllSubmissionProvinces,
+						schema: getAllSubmissionProvincesResp,
 					},
 				},
 			},
@@ -50,12 +58,123 @@ submissionRoute.openapi(
 				.from(usersTable)
 				.leftJoin(
 					provinceSubmissionsTable,
-					eq(provinceSubmissionsTable.userId, usersTable.id),
+					eq(provinceSubmissionsTable.submitById, usersTable.id),
 				)
 				.leftJoin(
 					provincesTable,
 					eq(provinceSubmissionsTable.provinceId, provincesTable.id),
 				)
+				.where(eq(usersTable.id, user.id))
+				.groupBy(usersTable.username, usersTable.email);
+
+			return c.json({ result }, 200);
+		} catch (error) {
+			return c.json({ error: error }, 400);
+		}
+	},
+);
+
+// get all languages by submitter
+submissionRoute.openapi(
+	createRoute({
+		middleware: checkAuthorized,
+		method: "get",
+		path: "/language",
+		tags: tags,
+		summary: "get all languages by submitter",
+		description: "get all languages by submitter",
+		responses: {
+			200: {
+				description: "request body",
+				content: {
+					"application/json": {
+						schema: getAllSubmissionLanguagesResp,
+					},
+				},
+			},
+			400: {
+				description: "clien error",
+			},
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		try {
+			const result = await db
+				.select({
+					username: usersTable.username,
+					email: usersTable.email,
+					submitProvinces: sql<Array<string>>`COALESCE(
+            json_agg(${languagesTable.name} ORDER BY ${languagesTable.name}),
+            '[]'::json
+          )`,
+				})
+				.from(usersTable)
+				.leftJoin(
+					languageSubmissionsTable,
+					eq(languageSubmissionsTable.submitById, usersTable.id),
+				)
+				.leftJoin(
+					languagesTable,
+					eq(languageSubmissionsTable.languageId, languagesTable.id),
+				)
+				.where(eq(usersTable.id, user.id))
+				.groupBy(usersTable.username, usersTable.email);
+
+			return c.json({ result }, 200);
+		} catch (error) {
+			return c.json({ error: error }, 400);
+		}
+	},
+);
+
+// get all words by submitter
+submissionRoute.openapi(
+	createRoute({
+		middleware: checkAuthorized,
+		method: "get",
+		path: "/word",
+		tags: tags,
+		summary: "get all words by submitter",
+		description: "get all words by submitter",
+		responses: {
+			200: {
+				description: "request body",
+				content: {
+					"application/json": {
+						schema: getAllSubmissionWordsResp,
+					},
+				},
+			},
+			400: {
+				description: "clien error",
+			},
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		try {
+			const result = await db
+				.select({
+					username: usersTable.username,
+					email: usersTable.email,
+					submitWords: sql<Array<{ word: string; meaning: string }>>`COALESCE(
+            json_agg(
+              json_build_object(
+                'word', ${wordsTable.word},
+                'meaning', ${wordsTable.meaning}
+              ) 
+              ORDER BY ${wordsTable.word}
+            ),
+            '[]'::json
+          )`,
+				})
+				.from(usersTable)
+				.leftJoin(
+					wordSubmissionsTable,
+					eq(wordSubmissionsTable.submitById, usersTable.id),
+				)
+				.leftJoin(wordsTable, eq(wordSubmissionsTable.wordId, wordsTable.id))
 				.where(eq(usersTable.id, user.id))
 				.groupBy(usersTable.username, usersTable.email);
 

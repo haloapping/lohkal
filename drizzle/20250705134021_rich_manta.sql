@@ -1,1 +1,0 @@
-ALTER TABLE "provinces" ADD CONSTRAINT "provinces_name_unique" UNIQUE("name");

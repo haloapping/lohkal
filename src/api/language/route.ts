@@ -65,7 +65,7 @@ languageRoute.openapi(
 
 				const languageId = result[0].id;
 				await tx.insert(languageSubmissionsTable).values({
-					userId: user.id,
+					submitById: user.id,
 					languageId: languageId,
 				});
 			});

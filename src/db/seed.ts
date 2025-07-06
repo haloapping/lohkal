@@ -39,7 +39,7 @@ async function main() {
 	await db.insert(provincesTable).values(seedProvinces);
 	for (const province of seedProvinces) {
 		await db.insert(provinceSubmissionsTable).values({
-			userId: userIds[Math.floor(Math.random() * userIds.length)],
+			submitById: userIds[Math.floor(Math.random() * userIds.length)],
 			provinceId: province.id,
 		});
 	}
@@ -48,7 +48,7 @@ async function main() {
 	await db.insert(languagesTable).values(seedLanguages);
 	for (const language of seedLanguages) {
 		await db.insert(languageSubmissionsTable).values({
-			userId: userIds[Math.floor(Math.random() * userIds.length)],
+			submitById: userIds[Math.floor(Math.random() * userIds.length)],
 			languageId: language.id,
 		});
 	}
@@ -57,7 +57,7 @@ async function main() {
 	await db.insert(wordsTable).values(seedWords);
 	for (const word of seedWords) {
 		await db.insert(wordSubmissionsTable).values({
-			userId: userIds[Math.floor(Math.random() * userIds.length)],
+			submitById: userIds[Math.floor(Math.random() * userIds.length)],
 			wordId: word.id,
 		});
 	}

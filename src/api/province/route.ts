@@ -59,7 +59,7 @@ provinceRoute.openapi(
 
 				const provinceId = result[0].id;
 				await tx.insert(provinceSubmissionsTable).values({
-					userId: user.id,
+					submitById: user.id,
 					provinceId: provinceId,
 				});
 			});

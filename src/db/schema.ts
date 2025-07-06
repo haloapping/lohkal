@@ -62,7 +62,7 @@ export const provinceSubmissionsTable = pgTable("province_submissions", {
 		.unique()
 		.notNull()
 		.$defaultFn(() => ulid()),
-	userId: text()
+	submitById: text()
 		.notNull()
 		.references(() => usersTable.id),
 	provinceId: text()
@@ -78,7 +78,7 @@ export const languageSubmissionsTable = pgTable("languange_submissions", {
 		.unique()
 		.notNull()
 		.$defaultFn(() => ulid()),
-	userId: text()
+	submitById: text()
 		.notNull()
 		.references(() => usersTable.id),
 	languageId: text()
@@ -94,12 +94,29 @@ export const wordSubmissionsTable = pgTable("word_submissions", {
 		.unique()
 		.notNull()
 		.$defaultFn(() => ulid()),
-	userId: text()
+	submitById: text()
 		.notNull()
 		.references(() => usersTable.id),
 	wordId: text()
 		.notNull()
 		.references(() => wordsTable.id),
+	createdAt: integer().$defaultFn(() => Math.floor(Date.now() / 1000.0)),
+	updatedAt: integer(),
+});
+
+export const voteWordsTable = pgTable("vote_words", {
+	id: text()
+		.primaryKey()
+		.unique()
+		.notNull()
+		.$defaultFn(() => ulid()),
+	voteById: text()
+		.notNull()
+		.references(() => usersTable.id),
+	wordId: text()
+		.notNull()
+		.references(() => wordsTable.id),
+	numberOfVote: integer().default(0),
 	createdAt: integer().$defaultFn(() => Math.floor(Date.now() / 1000.0)),
 	updatedAt: integer(),
 });
