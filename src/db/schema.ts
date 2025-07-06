@@ -32,7 +32,7 @@ export const languagesTable = pgTable("languages", {
 		.unique()
 		.notNull()
 		.$defaultFn(() => ulid()),
-	province_id: text()
+	provinceId: text()
 		.notNull()
 		.references(() => provincesTable.id),
 	name: text().notNull(),
@@ -52,6 +52,54 @@ export const wordsTable = pgTable("words", {
 		.references(() => languagesTable.id),
 	word: text(),
 	meaning: text(),
+	createdAt: integer().$defaultFn(() => Math.floor(Date.now() / 1000.0)),
+	updatedAt: integer(),
+});
+
+export const provinceSubmissionsTable = pgTable("province_submissions", {
+	id: text()
+		.primaryKey()
+		.unique()
+		.notNull()
+		.$defaultFn(() => ulid()),
+	userId: text()
+		.notNull()
+		.references(() => usersTable.id),
+	provinceId: text()
+		.notNull()
+		.references(() => provincesTable.id),
+	createdAt: integer().$defaultFn(() => Math.floor(Date.now() / 1000.0)),
+	updatedAt: integer(),
+});
+
+export const languageSubmissionsTable = pgTable("languange_submissions", {
+	id: text()
+		.primaryKey()
+		.unique()
+		.notNull()
+		.$defaultFn(() => ulid()),
+	userId: text()
+		.notNull()
+		.references(() => usersTable.id),
+	languageId: text()
+		.notNull()
+		.references(() => languagesTable.id),
+	createdAt: integer().$defaultFn(() => Math.floor(Date.now() / 1000.0)),
+	updatedAt: integer(),
+});
+
+export const wordSubmissionsTable = pgTable("word_submissions", {
+	id: text()
+		.primaryKey()
+		.unique()
+		.notNull()
+		.$defaultFn(() => ulid()),
+	userId: text()
+		.notNull()
+		.references(() => usersTable.id),
+	wordId: text()
+		.notNull()
+		.references(() => wordsTable.id),
 	createdAt: integer().$defaultFn(() => Math.floor(Date.now() / 1000.0)),
 	updatedAt: integer(),
 });

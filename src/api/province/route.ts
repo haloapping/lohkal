@@ -1,7 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
+import { eq, like, sql } from "drizzle-orm";
 import { db } from "../../db/db";
-import { provincesTable } from "../../db/schema";
+import { provinceSubmissionsTable, provincesTable } from "../../db/schema";
+import { checkAuthorized } from "../../middleware/auth";
 import { baseProvinceSchema } from "./schema/base-schema";
 import {
 	addNewProvinceSchemaReq,
@@ -14,6 +15,7 @@ const tags = ["provinces"];
 // add new province
 provinceRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "post",
 		path: "/",
 		tags: tags,
@@ -41,14 +43,68 @@ provinceRoute.openapi(
 		},
 	}),
 	async (c) => {
+		let result;
+
 		try {
-			const reqBody = c.req.valid("json");
+			await db.transaction(async (tx) => {
+				const reqBody = c.req.valid("json");
+				const user = c.get("user");
+
+				result = await tx
+					.insert(provincesTable)
+					.values({
+						name: reqBody.name,
+					})
+					.returning();
+
+				const provinceId = result[0].id;
+				await tx.insert(provinceSubmissionsTable).values({
+					userId: user.id,
+					provinceId: provinceId,
+				});
+			});
+		} catch (error) {
+			return c.json({ error: error }, 400);
+		}
+
+		return c.json(result, 200);
+	},
+);
+
+// search province by keyword
+provinceRoute.openapi(
+	createRoute({
+		method: "get",
+		path: "/search",
+		tags: tags,
+		summary: "search province by keyword",
+		description: "search province by keyword",
+		request: {
+			query: z.object({
+				q: z.string(),
+			}),
+		},
+		responses: {
+			200: {
+				description: "all result search by keyword",
+				content: {
+					"application/json": { schema: z.array(baseProvinceSchema) },
+				},
+			},
+			400: {
+				description: "error",
+			},
+		},
+	}),
+	async (c) => {
+		try {
+			const q = c.req.query("q");
 			const result = await db
-				.insert(provincesTable)
-				.values({
-					name: reqBody.name,
-				})
-				.returning();
+				.select()
+				.from(provincesTable)
+				.where(
+					like(sql`lower(${provincesTable.name})`, `%${q?.toLowerCase()}%`),
+				);
 
 			return c.json(result, 200);
 		} catch (error) {
@@ -72,7 +128,7 @@ provinceRoute.openapi(
 					"application/json": {
 						schema: z.object({
 							count: z.number(),
-							data: baseProvinceSchema,
+							data: z.array(baseProvinceSchema),
 						}),
 					},
 				},
@@ -96,6 +152,7 @@ provinceRoute.openapi(
 // get province by province id
 provinceRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "get",
 		path: "/:provinceId",
 		tags: tags,
@@ -140,6 +197,7 @@ provinceRoute.openapi(
 // update province by province id
 provinceRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "patch",
 		path: "/:provinceId",
 		tags: tags,
@@ -194,6 +252,7 @@ provinceRoute.openapi(
 // delete language by language id
 provinceRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "delete",
 		path: "/:provinceId",
 		tags: tags,

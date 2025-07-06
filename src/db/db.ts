@@ -11,4 +11,4 @@ const pool = new Pool({
 	ssl: false,
 });
 
-export const db = drizzle(pool, { casing: "snake_case" });
+export const db = drizzle(pool, { casing: "snake_case", logger: true });

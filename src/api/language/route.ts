@@ -1,7 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
+import { eq, like, or, sql } from "drizzle-orm";
 import { db } from "../../db/db";
-import { languagesTable } from "../../db/schema";
+import { languageSubmissionsTable, languagesTable } from "../../db/schema";
+import { checkAuthorized } from "../../middleware/auth";
 import { baseLanguageSchema } from "./schema/base-schema";
 import {
 	addNewLanguageSchemaReq,
@@ -18,6 +19,7 @@ const tags = ["languages"];
 // add new language
 languageRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "post",
 		path: "/",
 		tags: tags,
@@ -45,18 +47,78 @@ languageRoute.openapi(
 		},
 	}),
 	async (c) => {
-		try {
-			const reqBody = c.req.valid("json");
-			const result = await db
-				.insert(languagesTable)
-				.values({
-					province_id: reqBody.provinceId,
-					name: reqBody.name,
-					description: reqBody.description,
-				})
-				.returning();
+		let result;
 
-			return c.json(result, 201);
+		try {
+			await db.transaction(async (tx) => {
+				const reqBody = c.req.valid("json");
+				const user = c.get("user");
+
+				result = await tx
+					.insert(languagesTable)
+					.values({
+						provinceId: reqBody.provinceId,
+						name: reqBody.name,
+						description: reqBody.description,
+					})
+					.returning();
+
+				const languageId = result[0].id;
+				await tx.insert(languageSubmissionsTable).values({
+					userId: user.id,
+					languageId: languageId,
+				});
+			});
+		} catch (error) {
+			return c.json({ error: error }, 400);
+		}
+
+		return c.json(result, 200);
+	},
+);
+
+// search language by keyword
+languageRoute.openapi(
+	createRoute({
+		method: "get",
+		path: "/search",
+		tags: tags,
+		summary: "search language by keyword",
+		description: "search language by keyword",
+		request: {
+			query: z.object({
+				q: z.string(),
+			}),
+		},
+		responses: {
+			200: {
+				description: "all result search by keyword",
+				content: {
+					"application/json": { schema: getAllLanguageSchemaResp },
+				},
+			},
+			400: {
+				description: "error",
+			},
+		},
+	}),
+	async (c) => {
+		try {
+			const q = c.req.query("q");
+			const result = await db
+				.select()
+				.from(languagesTable)
+				.where(
+					or(
+						like(sql`lower(${languagesTable.name})`, `%${q?.toLowerCase()}%`),
+						like(
+							sql`lower(${languagesTable.description})`,
+							`%${q?.toLowerCase()}%`,
+						),
+					),
+				);
+
+			return c.json(result, 200);
 		} catch (error) {
 			return c.json({ error: error }, 400);
 		}
@@ -66,6 +128,7 @@ languageRoute.openapi(
 // get all languages
 languageRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "get",
 		path: "/",
 		tags: tags,
@@ -97,6 +160,7 @@ languageRoute.openapi(
 // get language by id
 languageRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "get",
 		path: "/:languageId",
 		tags: tags,
@@ -141,6 +205,7 @@ languageRoute.openapi(
 // update languange by language id
 languageRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "patch",
 		path: "/:languageId",
 		tags: tags,
@@ -195,6 +260,7 @@ languageRoute.openapi(
 // delete language by language id
 languageRoute.openapi(
 	createRoute({
+		middleware: checkAuthorized,
 		method: "delete",
 		path: "/:languageId",
 		tags: tags,
